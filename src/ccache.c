@@ -232,6 +232,11 @@ static bool using_precompiled_header = false;
 // The .gch/.pch/.pth file used for compilation.
 static char *included_pch_file = NULL;
 
+// Is the armcc parameter --asm specified?
+bool generating_asm;
+static char *asm_filename;
+static char *cached_asm;
+
 // How long (in microseconds) to wait before breaking a stale lock.
 unsigned lock_staleness_limit = 2000000;
 
@@ -1132,6 +1137,7 @@ get_file_from_cache(const char *source, const char *dest)
 		x_unlink(cached_dep);
 		x_unlink(cached_cov);
 		x_unlink(cached_su);
+		x_unlink(cached_asm);
 		x_unlink(cached_dia);
 		x_unlink(cached_dwo);
 
@@ -1331,6 +1337,15 @@ to_cache(struct args *args)
 		copy_file_to_cache(output_dwo, cached_dwo);
 	}
 
+	if (generating_asm) {
+		if (x_stat(asm_filename, &st) != 0) {
+			stats_update(STATS_ERROR);
+			failed();
+		}
+		if (st.st_size > 0) {
+			put_file_in_cache(asm_filename, cached_asm);
+		}
+	}
 	stats_update(STATS_TOCACHE);
 
 	// Make sure we have a CACHEDIR.TAG in the cache part of cache_dir. This can
@@ -1481,6 +1496,7 @@ update_cached_result_globals(struct file_hash *hash)
 	cached_obj = get_path_in_cache(object_name, ".o");
 	cached_stderr = get_path_in_cache(object_name, ".stderr");
 	cached_dep = get_path_in_cache(object_name, ".d");
+	cached_asm = get_path_in_cache(object_name, ".s");
 	cached_cov = get_path_in_cache(object_name, ".gcno");
 	cached_su = get_path_in_cache(object_name, ".su");
 	cached_dia = get_path_in_cache(object_name, ".dia");
@@ -1989,6 +2005,9 @@ from_cache(enum fromcache_call_mode mode, bool put_object_in_manifest)
 	if (produce_dep_file) {
 		get_file_from_cache(cached_dep, output_dep);
 	}
+	if (generating_asm) {
+		get_file_from_cache(cached_asm, asm_filename);
+	}
 	if (generating_coverage) {
 		get_file_from_cache(cached_cov, output_cov);
 	}
@@ -2005,6 +2024,9 @@ from_cache(enum fromcache_call_mode mode, bool put_object_in_manifest)
 	update_mtime(cached_stderr);
 	if (produce_dep_file) {
 		update_mtime(cached_dep);
+	}
+	if (generating_asm) {
+		update_mtime(cached_asm);
 	}
 	if (generating_coverage) {
 		update_mtime(cached_cov);
@@ -2213,11 +2235,26 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 		}
 
 		// Handle "@file" argument.
-		if (str_startswith(argv[i], "@") || str_startswith(argv[i], "-@")) {
-			char *argpath = argv[i] + 1;
+		if (str_startswith(argv[i], "@") || str_startswith(argv[i], "-@") || str_eq(argv[i], "--via")) {
+			char *argpath;
 
-			if (argpath[-1] == '-') {
-				++argpath;
+			if (str_eq(argv[i], "--via")) {
+				// --via arg
+				if (i >= argc - 1) {
+					cc_log("Missing argument to %s", argv[i]);
+					stats_update(STATS_ARGS);
+					result = false;
+					goto out;
+				}
+				argpath = argv[i + 1];
+				i++;
+			} else {
+				// -@ arg (- is optional)
+				argpath = argv[i] + 1;
+
+				if (argpath[-1] == '-') {
+					++argpath;
+				}
 			}
 			struct args *file_args = args_init_from_gcc_atfile(argpath);
 			if (!file_args) {
@@ -2408,6 +2445,13 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 			continue;
 		}
 
+		// Handle --asm option for armcc
+		if ( str_eq(argv[i], "--asm") && !found_S_opt) {
+			generating_asm = true;
+			args_add(stripped_args, argv[i]);
+			continue;
+		}
+
 		// These options require special handling, because they behave differently
 		// with gcc -E, when the output file is not specified.
 		if (str_eq(argv[i], "-MD") || str_eq(argv[i], "-MMD")) {
@@ -2415,12 +2459,20 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 			args_add(dep_args, argv[i]);
 			continue;
 		}
-		if (str_startswith(argv[i], "-MF")) {
+		if (str_startswith(argv[i], "-MF") || str_eq(argv[i], "--depend")) {
 			dependency_filename_specified = true;
 			free(output_dep);
 
 			char *arg;
-			bool separate_argument = (strlen(argv[i]) == 3);
+			char *arg_name;
+			bool separate_argument;
+			if (str_eq(argv[i], "--depend")) {
+				separate_argument = true;
+				arg_name = "--depend";
+			} else {
+				separate_argument = (strlen(argv[i]) == 3);
+				arg_name = "-MF";
+			}
 			if (separate_argument) {
 				// -MF arg
 				if (i == argc - 1) {
@@ -2438,7 +2490,7 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 			output_dep = make_relative_path(x_strdup(arg));
 			// Keep the format of the args the same.
 			if (separate_argument) {
-				args_add(dep_args, "-MF");
+				args_add(dep_args, arg_name);
 				args_add(dep_args, output_dep);
 			} else {
 				char *option = format("-MF%s", output_dep);
@@ -2826,6 +2878,14 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 		// is also given.
 		using_split_dwarf = false;
 		cc_log("Disabling caching of dwarf files since -S is used");
+	}
+
+	// Handle --asm option for armcc
+	if (generating_asm) {
+		char *base_name = remove_extension(output_obj);
+		char *default_depfile_name = format("%s.s", base_name);
+		free(base_name);
+		asm_filename = make_relative_path(x_strdup(default_depfile_name));
 	}
 
 	if (!input_file) {
@@ -3220,6 +3280,7 @@ cc_reset(void)
 	free(cached_stderr); cached_stderr = NULL;
 	free(cached_obj); cached_obj = NULL;
 	free(cached_dep); cached_dep = NULL;
+	free(cached_asm); cached_asm = NULL;
 	free(cached_cov); cached_cov = NULL;
 	free(cached_su); cached_su = NULL;
 	free(cached_dia); cached_dia = NULL;
@@ -3238,6 +3299,7 @@ cc_reset(void)
 	has_absolute_include_headers = false;
 	generating_debuginfo = false;
 	generating_dependencies = false;
+	generating_asm = false;
 	generating_coverage = false;
 	generating_stackusage = false;
 	profile_arcs = false;
@@ -3325,6 +3387,9 @@ ccache(int argc, char *argv[])
 	cc_log("Source file: %s", input_file);
 	if (generating_dependencies) {
 		cc_log("Dependency file: %s", output_dep);
+	}
+	if (generating_asm) {
+		cc_log("Assembly file: %s", asm_filename);
 	}
 	if (generating_coverage) {
 		cc_log("Coverage file: %s", output_cov);
