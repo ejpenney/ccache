@@ -171,6 +171,25 @@ cc_log_argv(const char *prefix, char **argv)
 void
 fatal(const char *format, ...)
 {
+	extern struct conf *conf;
+
+	va_list ap;
+	va_start(ap, format);
+	char msg[1000];
+	vsnprintf(msg, sizeof(msg), format, ap);
+	va_end(ap);
+
+	if (conf->halt_on_failure) {
+		fatal_real(msg);
+	} else { // We were told not to halt the build so try to call the actual compiler instead
+		cc_log("WARNING: %s", msg);
+		failed();
+	}
+}
+
+void
+fatal_real(const char *format, ...)
+{
 	va_list ap;
 	va_start(ap, format);
 	char msg[1000];

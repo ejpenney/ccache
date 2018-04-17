@@ -15,6 +15,7 @@ struct conf {
 	bool direct_mode;
 	bool disable;
 	char *extra_files_to_hash;
+	bool halt_on_failure;
 	bool hard_link;
 	bool hash_dir;
 	char *ignore_headers_in_manifest;
