@@ -366,6 +366,12 @@ WRAPPERS>>.
     the hash sum that identifies the build. The list separator is semicolon on
     Windows systems and colon on other systems.
 
+*halt_on_failure* (*CCACHE_HALT_ON_FAILURE* or *CCACHE_NOHALT_ON_FAILURE*, see <<_boolean_values,Boolean values>> above)::
+
+    If true (default) CCACHE will halt and exit with a non-zero error in the
+    event of an internal failure. When false this setting will tell CCACHE
+    to call the real compiler in the event of failure and ignore internal issues. 
+
 *hard_link* (*CCACHE_HARDLINK* or *CCACHE_NOHARDLINK*, see <<_boolean_values,Boolean values>> above)::
 
     If true, ccache will attempt to use hard links from the cache directory
