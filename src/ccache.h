@@ -136,8 +136,9 @@ bool hash_file(struct mdfour *md, const char *fname);
 void cc_log(const char *format, ...) ATTR_FORMAT(printf, 1, 2);
 void cc_bulklog(const char *format, ...) ATTR_FORMAT(printf, 1, 2);
 void cc_log_argv(const char *prefix, char **argv);
-void fatal(const char *format, ...) ATTR_FORMAT(printf, 1, 2) ATTR_NORETURN;
+void fatal(const char *format, ...) ATTR_FORMAT(printf, 1, 2);
 void warn(const char *format, ...) ATTR_FORMAT(printf, 1, 2);
+void fatal_real(const char *format, ...) ATTR_NORETURN;
 
 void copy_fd(int fd_in, int fd_out);
 int copy_file(const char *src, const char *dest, int compress_level);
@@ -256,6 +257,7 @@ void lockfile_release(const char *path);
 extern time_t time_of_compilation;
 extern bool output_is_precompiled_header;
 void block_signals(void);
+void failed();
 void unblock_signals(void);
 bool cc_process_args(struct args *args, struct args **preprocessor_args,
                     struct args **compiler_args);
