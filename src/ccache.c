@@ -299,7 +299,7 @@ add_prefix(struct args *args, char *prefix_command)
 }
 
 // Something went badly wrong - just execute the real compiler.
-static void
+void
 failed(void)
 {
 	assert(orig_args);
@@ -311,7 +311,7 @@ failed(void)
 	cc_log_argv("Executing ", orig_args->argv);
 	exitfn_call();
 	execv(orig_args->argv[0], orig_args->argv);
-	fatal("execv of %s failed: %s", orig_args->argv[0], strerror(errno));
+	fatal_real("execv of %s failed: %s", orig_args->argv[0], strerror(errno));
 }
 
 static const char *
