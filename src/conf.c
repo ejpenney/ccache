@@ -333,6 +333,7 @@ conf_create(void)
 	conf->direct_mode = true;
 	conf->disable = false;
 	conf->extra_files_to_hash = x_strdup("");
+	conf->halt_on_failure = true;
 	conf->hard_link = false;
 	conf->hash_dir = true;
 	conf->ignore_headers_in_manifest = x_strdup("");
@@ -686,6 +687,7 @@ conf_print_items(struct conf *conf,
 	reformat(&s, "unify = %s", bool_to_string(conf->unify));
 	printer(s, conf->item_origins[find_conf("unify")->number], context);
 
+	reformat(&s, "halt_on_failure = %s", bool_to_string(conf->halt_on_failure));
 	free(s);
 	return true;
 }
