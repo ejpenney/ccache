@@ -581,6 +581,9 @@ conf_print_items(struct conf *conf,
 	printer(s, conf->item_origins[find_conf("extra_files_to_hash")->number],
 	        context);
 
+	reformat(&s, "halt_on_failure = %s", bool_to_string(conf->halt_on_failure));
+	printer(s, conf->item_origins[find_conf("halt_on_failure")->number], context);
+
 	reformat(&s, "hard_link = %s", bool_to_string(conf->hard_link));
 	printer(s, conf->item_origins[find_conf("hard_link")->number], context);
 
@@ -687,7 +690,6 @@ conf_print_items(struct conf *conf,
 	reformat(&s, "unify = %s", bool_to_string(conf->unify));
 	printer(s, conf->item_origins[find_conf("unify")->number], context);
 
-	reformat(&s, "halt_on_failure = %s", bool_to_string(conf->halt_on_failure));
 	free(s);
 	return true;
 }
