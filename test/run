@@ -366,6 +366,7 @@ multi_arch
 serialize_diagnostics
 debug_prefix_map
 masquerading
+halt
 hardlink
 direct
 basedir
