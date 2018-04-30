@@ -153,7 +153,7 @@ TEST(conf_read_valid_config)
 	CHECK(!conf->direct_mode);
 	CHECK(conf->disable);
 	CHECK_STR_EQ_FREE1(format("a:b c:%s", user), conf->extra_files_to_hash);
-        CHECK(conf->halt_on_failure);
+	CHECK(conf->halt_on_failure);
 	CHECK(conf->hard_link);
 	CHECK(!conf->hash_dir);
 	CHECK_STR_EQ("a:b/c", conf->ignore_headers_in_manifest);
@@ -450,7 +450,7 @@ TEST(conf_print_items)
 	CHECK_STR_EQ("direct_mode = false", received_conf_items[n++].descr);
 	CHECK_STR_EQ("disable = true", received_conf_items[n++].descr);
 	CHECK_STR_EQ("extra_files_to_hash = efth", received_conf_items[n++].descr);
-        CHECK_STR_EQ("halt_on_failure = true", received_conf_items[n++].descr);
+	CHECK_STR_EQ("halt_on_failure = true", received_conf_items[n++].descr);
 	CHECK_STR_EQ("hard_link = true", received_conf_items[n++].descr);
 	CHECK_STR_EQ("hash_dir = false", received_conf_items[n++].descr);
 	CHECK_STR_EQ("ignore_headers_in_manifest = ihim",
