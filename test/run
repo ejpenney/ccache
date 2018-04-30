@@ -367,6 +367,7 @@ serialize_diagnostics
 sanitize_blacklist
 debug_prefix_map
 masquerading
+halt
 hardlink
 direct
 basedir
