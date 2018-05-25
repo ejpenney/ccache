@@ -60,6 +60,7 @@ enum stats {
 
 enum guessed_compiler {
 	GUESSED_CLANG,
+	GUESSED_ARMCC,
 	GUESSED_GCC,
 	GUESSED_NVCC,
 	GUESSED_PUMP,
