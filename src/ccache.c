@@ -494,6 +494,8 @@ guess_compiler(const char *path)
 		result = GUESSED_NVCC;
 	} else if (str_eq(name, "pump") || str_eq(name, "distcc-pump")) {
 		result = GUESSED_PUMP;
+	} else if (str_eq(name, "armcc")) {
+		result = GUESSED_ARMCC;
 	}
 	free(name);
 	return result;
@@ -2484,6 +2486,7 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 			char *arg_name;
 			bool separate_argument;
 			if (str_eq(argv[i], "--depend")) {
+				generating_dependencies = true;
 				separate_argument = true;
 				arg_name = "--depend";
 			} else {
@@ -3112,7 +3115,11 @@ cc_process_args(struct args *args, struct args **preprocessor_args,
 
 		if (!dependency_target_specified
 		    && !str_eq(get_extension(output_dep), ".o")) {
-			args_add(dep_args, "-MQ");
+			if (guessed_compiler == GUESSED_ARMCC) {
+				args_add(dep_args, "--depend_target");
+			} else {
+				args_add(dep_args, "-MQ");
+			}
 			args_add(dep_args, output_obj);
 		}
 	}
