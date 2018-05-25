@@ -1346,7 +1346,7 @@ to_cache(struct args *args)
 			failed();
 		}
 		if (st.st_size > 0) {
-			put_file_in_cache(asm_filename, cached_asm);
+			copy_file_to_cache(asm_filename, cached_asm);
 		}
 	}
 	stats_update(STATS_TOCACHE);
