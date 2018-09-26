@@ -153,7 +153,7 @@ TEST(conf_read_valid_config)
 	CHECK(!conf->direct_mode);
 	CHECK(conf->disable);
 	CHECK_STR_EQ_FREE1(format("a:b c:%s", user), conf->extra_files_to_hash);
-        CHECK(conf->halt_on_failure);
+	CHECK(conf->halt_on_failure);
 	CHECK(conf->hard_link);
 	CHECK(!conf->hash_dir);
 	CHECK_STR_EQ("a:b/c", conf->ignore_headers_in_manifest);
